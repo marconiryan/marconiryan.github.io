@@ -1,0 +1,33 @@
+title: ""
+description: ""
+owner: marconiryan
+owner_url: https://github.com/marconiryan
+lang: en
+timezone: America/Sao_Paulo
+
+url: ""
+baseurl: ""
+
+permalink: /:title/
+
+markdown: kramdown
+kramdown:
+  input: GFM
+  hard_wrap: false
+  syntax_highlighter: rouge
+
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+
+defaults:
+  - scope:
+      path: ""
+      type: posts
+    values:
+      layout: post
+
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - vendor

@@ -1,0 +1,118 @@
+---
+layout: default
+---
+{%- assign heading_chunks = content | split: '<h2 id="' -%}
+
+<article>
+  <h1 class="doc-title">{{ page.title }}</h1>
+
+  <div class="doc-meta">
+    <span class="chip">
+      <svg class="icon" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
+        <rect x="2" y="3" width="12" height="11" rx="2"/>
+        <path d="M2 6.5h12M5.5 1.5v3M10.5 1.5v3"/>
+      </svg>
+      <time datetime="{{ page.date | date_to_xmlschema }}">{{ page.date | date: "%b %-d, %Y" }}</time>
+    </span>
+    <a class="chip" href="{{ site.owner_url }}" target="_blank" rel="noopener">@{{ site.owner }}</a>
+  </div>
+
+  <div class="doc-body">
+    {{ content }}
+  </div>
+</article>
+
+{%- if heading_chunks.size > 2 %}
+<button class="toc-toggle" type="button" aria-controls="toc" aria-expanded="false" hidden>
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+    <path d="M5.5 4h8M5.5 8h8M5.5 12h8M2.5 4h0M2.5 8h0M2.5 12h0"/>
+  </svg>
+  Contents
+</button>
+<nav class="toc" id="toc" aria-label="Contents">
+  <p class="toc-title">Contents</p>
+  <ul>
+    {%- for chunk in heading_chunks offset: 1 %}
+    {%- assign heading_id = chunk | split: '"' | first %}
+    {%- assign heading_text = chunk | split: '</h2>' | first | remove_first: heading_id | remove_first: '">' | strip_html %}
+    <li><a href="#{{ heading_id }}">{{ heading_text }}</a></li>
+    {%- endfor %}
+  </ul>
+</nav>
+<script>
+  {
+    const toc = document.getElementById('toc');
+    const tocButton = document.querySelector('.toc-toggle');
+    const tocLinks = [...toc.querySelectorAll('a')];
+    const sections = tocLinks.map((link) => document.getElementById(decodeURIComponent(link.hash.slice(1))));
+
+    // a section counts as "being read" once its heading passes this distance from the top of the window
+    const READING_LINE_PX = 120;
+
+    const highlightCurrentSection = () => {
+      let currentIndex = 0;
+      sections.forEach((section, index) => {
+        const hasPassedReadingLine = section !== null && section.getBoundingClientRect().top <= READING_LINE_PX;
+        if (hasPassedReadingLine) {
+          currentIndex = index;
+        }
+      });
+      tocLinks.forEach((link, index) => {
+        if (index === currentIndex) {
+          link.setAttribute('aria-current', 'true');
+        } else {
+          link.removeAttribute('aria-current');
+        }
+      });
+    };
+
+    let isFrameRequested = false;
+    window.addEventListener('scroll', () => {
+      if (isFrameRequested) {
+        return;
+      }
+      isFrameRequested = true;
+      requestAnimationFrame(() => {
+        isFrameRequested = false;
+        highlightCurrentSection();
+      });
+    }, { passive: true });
+    highlightCurrentSection();
+
+    const isTocOpen = () => toc.classList.contains('open');
+
+    const setTocOpen = (isOpen) => {
+      toc.classList.toggle('open', isOpen);
+      tocButton.setAttribute('aria-expanded', isOpen);
+      if (isOpen) {
+        toc.querySelector('[aria-current]')?.scrollIntoView({ block: 'nearest' });
+      }
+    };
+
+    tocButton.hidden = false;
+    tocButton.addEventListener('click', (event) => {
+      event.stopPropagation();
+      setTocOpen(!isTocOpen());
+    });
+    toc.addEventListener('click', (event) => {
+      const isLinkClick = event.target.closest('a') !== null;
+      if (isLinkClick) {
+        setTocOpen(false);
+      }
+    });
+    document.addEventListener('click', (event) => {
+      const isClickOutsideToc = !toc.contains(event.target);
+      if (isClickOutsideToc) {
+        setTocOpen(false);
+      }
+    });
+    document.addEventListener('keydown', (event) => {
+      const shouldCloseToc = event.key === 'Escape' && isTocOpen();
+      if (shouldCloseToc) {
+        setTocOpen(false);
+        tocButton.focus();
+      }
+    });
+  }
+</script>
+{%- endif %}
